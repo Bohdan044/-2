@@ -1,30 +1,34 @@
-use rand::Rng;
-
-fn gen_random_vector(n: usize) -> Vec<i32> {
-    let mut rng = rand::thread_rng();
-    (0..n).map(|_| rng.gen_range(10..99)).collect()
-}
-
-fn min_adjacent_sum(data: &[i32]) -> (usize, usize, i32) {
-    data.windows(2)
-        .enumerate()
-        .map(|(i, w)| (i, i + 1, w[0] + w[1]))
-        .min_by_key(|&(_, _, sum)| sum)
-        .unwrap()
-}
-
-fn print_result(data: &[i32]) {
-    let (idx1, idx2, min_sum) = min_adjacent_sum(data);
+fn count_permutation(shipments: &Vec<u32>) -> Option<usize> {
+    let total: u32 = shipments.iter().sum();
+    let len = shipments.len() as u32;
     
-    println!("indexes: {}", (0..data.len()).map(|i| format!("{:2}.", i)).collect::<Vec<_>>().join(" "));
-    println!("data:   [{}]", data.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(", "));
-    println!("indexes: {}\\__ __/{}", " ".repeat(idx1 * 3), " ".repeat((data.len() - idx2 - 1) * 3));
-    println!("min adjacent sum={}+{}={} at indexes:{},{}", data[idx1], data[idx2], min_sum, idx1, idx2);
+    if total % len != 0 {
+        return None; // Неможливо зробити рівномірний розподіл
+    }
+    
+    let average = total / len;
+    let mut moves = 0;
+    let mut balance = 0;
+    
+    for &shipment in shipments {
+        balance += shipment as i32 - average as i32;
+        moves += balance.abs() as usize;
+    }
+    
+    Some(moves)
+}
+
+fn gen_shipments(n: usize) -> Vec<u32> {
+    let avg = 5; // Базове значення для рівномірного розподілу
+    vec![avg; n]
 }
 
 fn main() {
-    let data = gen_random_vector(20);
-    print_result(&data);
+    let shipments = vec![8, 2, 2, 4, 4];
+    match count_permutation(&shipments) {
+        Some(moves) => println!("Мінімальна кількість переміщень: {}", moves),
+        None => println!("Рівномірний розподіл неможливий"),
+    }
 }
 
 #[cfg(test)]
@@ -32,9 +36,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_min_adjacent_sum() {
-        let data = vec![45, 87, 49, 64, 50, 37, 45, 72, 55, 64, 90, 86, 60, 54, 78, 72, 83, 44, 89, 22];
-        let (idx1, idx2, sum) = min_adjacent_sum(&data);
-        assert_eq!((idx1, idx2, sum), (5, 6, 82));
+    fn test_count_permutation() {
+        assert_eq!(count_permutation(&vec![8, 2, 2, 4, 4]), Some(4));
+        assert_eq!(count_permutation(&vec![9, 3, 7, 2, 9]), Some(7));
+        assert_eq!(count_permutation(&vec![10, 10, 10, 10]), Some(0));
+        assert_eq!(count_permutation(&vec![5, 5, 5, 6]), Some(1));
+        assert_eq!(count_permutation(&vec![1, 2, 3]), None);
     }
 }
